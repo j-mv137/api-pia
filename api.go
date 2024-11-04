@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -13,6 +14,7 @@ import (
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
 	router.HandleFunc("/api/new-survey", makeHTTPHandlerFunc(s.handleNewSurvey))
+	router.HandleFunc("/api/download-xlsx", makeHTTPHandlerFunc(s.handleDownloadFile))
 
 	fmt.Printf("Server running on port http://localhost%s", s.ListenAddr)
 
@@ -127,7 +129,30 @@ func (s *APIServer) WriteExcel(sheet string, idStr string, userResponse *UserRes
 	if err := s.ExcelFile.Save(); err != nil {
 		return err
 	}
-	s.ExcelFile.Close()
+	defer s.ExcelFile.Close()
+	return nil
+}
+
+func (s *APIServer) handleDownloadFile(w http.ResponseWriter, r *http.Request) error {
+	filepath := os.Getenv("EXCEL_FILE_PATH")
+
+	file, err := os.Open(filepath)
+
+	if err != nil {
+		return err
+	}
+
+	fileInfo, err := file.Stat()
+
+	if err != nil {
+		return err
+	}
+
+	w.Header().Add("Content-Disposition", "attachment; filename="+filepath)
+	w.Header().Add("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+	http.ServeContent(w, r, filepath, fileInfo.ModTime(), file)
+
 	return nil
 }
 
