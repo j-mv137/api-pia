@@ -127,7 +127,7 @@ func (s *APIServer) WriteExcel(sheet string, idStr string, userResponse *UserRes
 	if err := s.ExcelFile.Save(); err != nil {
 		return err
 	}
-
+	s.ExcelFile.Close()
 	return nil
 }
 
