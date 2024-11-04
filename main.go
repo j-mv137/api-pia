@@ -2,12 +2,13 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/xuri/excelize/v2"
 )
 
 func main() {
-	f, err := excelize.OpenFile("./data_surveys.xlsx")
+	f, err := excelize.OpenFile(os.Getenv("EXCEL_FILE_PATH"))
 
 	if err != nil {
 		log.Fatal(err)
