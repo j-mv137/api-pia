@@ -2,18 +2,25 @@ package main
 
 import (
 	"log"
-	"os"
 
 	"github.com/xuri/excelize/v2"
 )
 
 func main() {
-	f, err := excelize.OpenFile(os.Getenv("EXCEL_FILE_PATH"))
+
+	// path, e := os.LookupEnv("EXCEL_FILE_PATH")
+
+	// if !e {
+	// 	log.Fatal("Error con la dirección")
+	// }
+
+	f, err := excelize.OpenFile("./data_surveys.xlsx")
 
 	if err != nil {
 		log.Fatal(err)
+
 	}
 
-	apiServer := NewAPIServer(":"+os.Getenv("PORT"), f)
+	apiServer := NewAPIServer(":3002", f)
 	apiServer.Run()
 }

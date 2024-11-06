@@ -69,13 +69,12 @@ func (s *APIServer) handleNewSurvey(w http.ResponseWriter, r *http.Request) erro
 		}
 		if len(cellVal) == 0 {
 			id = i
-			fmt.Println(id)
 			break
 		}
 	}
 
-	userResponse.id = id
-	idStr := strconv.FormatInt(int64(userResponse.id), 10)
+	userResponse.id = id - 7
+	idStr := strconv.FormatInt(int64(id), 10)
 
 	err2 := s.WriteExcelIPAQ("IPAQ Short Form Scoring", idStr, userResponse)
 	if err2 != nil {
@@ -95,7 +94,7 @@ func (s *APIServer) handleRegister(w http.ResponseWriter, r *http.Request) error
 	}
 
 	rows, err := s.ExcelFile.GetRows("Registro de usuarios")
-
+	fmt.Println(len(rows))
 	if err != nil {
 		return err
 	}
@@ -113,14 +112,14 @@ func (s *APIServer) handleRegister(w http.ResponseWriter, r *http.Request) error
 			break
 		}
 	}
-
+	fmt.Println(id)
 	userRegisterC, err := makeUserRegister(*userRegister, id)
 
 	if err != nil {
 		return err
 	}
 
-	errExcelReg := s.WriteExcelRegister("Registro de usuarios", userRegisterC)
+	errExcelReg := s.WriteExcelRegister("Registro de usuarios", id, userRegisterC)
 
 	if errExcelReg != nil {
 		return errExcelReg
@@ -129,9 +128,9 @@ func (s *APIServer) handleRegister(w http.ResponseWriter, r *http.Request) error
 	return nil
 }
 
-func (s *APIServer) WriteExcelRegister(sheet string, userRegisterC *UserRegisterC) error {
-	idStr := strconv.FormatInt(int64(userRegisterC.ID), 10)
-	err1 := s.ExcelFile.SetCellValue(sheet, "A"+idStr, idStr)
+func (s *APIServer) WriteExcelRegister(sheet string, id int, userRegisterC *UserRegisterC) error {
+	idStr := strconv.FormatInt(int64(id), 10)
+	err1 := s.ExcelFile.SetCellValue(sheet, "A"+idStr, userRegisterC.ID)
 	if err1 != nil {
 		return err1
 	}
@@ -172,7 +171,7 @@ func (s *APIServer) WriteExcelRegister(sheet string, userRegisterC *UserRegister
 }
 
 func (s *APIServer) WriteExcelIPAQ(sheet string, idStr string, userResponse *UserResponse) error {
-	err1 := s.ExcelFile.SetCellValue(sheet, "A"+idStr, idStr)
+	err1 := s.ExcelFile.SetCellValue(sheet, "A"+idStr, userResponse.id)
 	if err1 != nil {
 		return err1
 	}
@@ -276,7 +275,7 @@ func makeUserRegister(user UserRegister, id int) (*UserRegisterC, error) {
 	}
 
 	return &UserRegisterC{
-		ID:           id,
+		ID:           id - 2,
 		Bachillerato: user.Bachillerato,
 		Semestre:     int(sem),
 		Sexo:         user.Sexo,
