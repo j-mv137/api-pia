@@ -52,6 +52,7 @@ func (s *APIServer) handleNewGrade(w http.ResponseWriter, r *http.Request) error
 	gradeInt, err := strconv.ParseInt(grade.Calif, 10, 32)
 
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 
