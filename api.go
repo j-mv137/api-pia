@@ -14,6 +14,7 @@ import (
 func (s *APIServer) Run() {
 	router := mux.NewRouter()
 	router.HandleFunc("/api/new-survey", makeHTTPHandlerFunc(s.handleNewSurvey))
+	router.HandleFunc("/api/register", makeHTTPHandlerFunc(s.handleRegister))
 	router.HandleFunc("/api/download-xlsx", makeHTTPHandlerFunc(s.handleDownloadFile))
 
 	fmt.Printf("Server running on port http://localhost%s", s.ListenAddr)
@@ -58,9 +59,7 @@ func (s *APIServer) handleNewSurvey(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	fmt.Println(rows[7][1])
-
-	for i, _ := range rows {
+	for i := 0; i < len(rows); i++ {
 		if i < 7 {
 			continue
 		}
@@ -78,7 +77,7 @@ func (s *APIServer) handleNewSurvey(w http.ResponseWriter, r *http.Request) erro
 	userResponse.id = id
 	idStr := strconv.FormatInt(int64(userResponse.id), 10)
 
-	err2 := s.WriteExcel("IPAQ Short Form Scoring", idStr, userResponse)
+	err2 := s.WriteExcelIPAQ("IPAQ Short Form Scoring", idStr, userResponse)
 	if err2 != nil {
 		return err2
 	}
@@ -86,42 +85,122 @@ func (s *APIServer) handleNewSurvey(w http.ResponseWriter, r *http.Request) erro
 	return nil
 }
 
-func (s *APIServer) WriteExcel(sheet string, idStr string, userResponse *UserResponse) error {
-	// idInt, err := strconv.ParseInt(idStr, 10, 64)
+func (s *APIServer) handleRegister(w http.ResponseWriter, r *http.Request) error {
+	userRegister := &UserRegister{}
+	err := json.NewDecoder(r.Body).Decode(userRegister)
+	var id int
 
-	// if err != nil {
-	// 	return err
-	// }
+	if err != nil {
+		return err
+	}
 
-	err1 := s.ExcelFile.SetCellValue("IPAQ Short Form Scoring", "A"+idStr, idStr)
+	rows, err := s.ExcelFile.GetRows("Registro de usuarios")
+
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(rows); i++ {
+		if i < 2 {
+			continue
+		}
+		cellVal, err := s.ExcelFile.GetCellValue("Registro de usuarios", "A"+strconv.FormatInt(int64(i), 10))
+		if err != nil {
+			break
+		}
+		if len(cellVal) == 0 {
+			id = i
+			break
+		}
+	}
+
+	userRegisterC, err := makeUserRegister(*userRegister, id)
+
+	if err != nil {
+		return err
+	}
+
+	errExcelReg := s.WriteExcelRegister("Registro de usuarios", userRegisterC)
+
+	if errExcelReg != nil {
+		return errExcelReg
+	}
+
+	return nil
+}
+
+func (s *APIServer) WriteExcelRegister(sheet string, userRegisterC *UserRegisterC) error {
+	idStr := strconv.FormatInt(int64(userRegisterC.ID), 10)
+	err1 := s.ExcelFile.SetCellValue(sheet, "A"+idStr, idStr)
 	if err1 != nil {
 		return err1
 	}
-	err2 := s.ExcelFile.SetCellValue("IPAQ Short Form Scoring", "B"+idStr, userResponse.Q1)
+	err2 := s.ExcelFile.SetCellValue(sheet, "B"+idStr, userRegisterC.Sexo)
 	if err2 != nil {
 		return err2
 	}
-	err3 := s.ExcelFile.SetCellValue("IPAQ Short Form Scoring", "C"+idStr, userResponse.Q2)
+	err3 := s.ExcelFile.SetCellValue(sheet, "C"+idStr, userRegisterC.Edad)
 	if err3 != nil {
 		return err3
 	}
-	err4 := s.ExcelFile.SetCellValue("IPAQ Short Form Scoring", "D"+idStr, userResponse.Q3)
+	err4 := s.ExcelFile.SetCellValue(sheet, "D"+idStr, userRegisterC.Bachillerato)
 	if err4 != nil {
 		return err4
 	}
-	err5 := s.ExcelFile.SetCellValue("IPAQ Short Form Scoring", "E"+idStr, userResponse.Q4)
+	err5 := s.ExcelFile.SetCellValue(sheet, "E"+idStr, userRegisterC.Semestre)
 	if err5 != nil {
 		return err5
 	}
-	err6 := s.ExcelFile.SetCellValue("IPAQ Short Form Scoring", "F"+idStr, userResponse.Q5)
+	err6 := s.ExcelFile.SetCellValue(sheet, "F"+idStr, userRegisterC.EstadoCivil)
 	if err6 != nil {
 		return err6
 	}
-	err7 := s.ExcelFile.SetCellValue("IPAQ Short Form Scoring", "G"+idStr, userResponse.Q6)
+	err7 := s.ExcelFile.SetCellValue(sheet, "G"+idStr, userRegisterC.Trabajo)
 	if err7 != nil {
 		return err7
 	}
-	err8 := s.ExcelFile.SetCellValue("IPAQ Short Form Scoring", "H"+idStr, userResponse.Q7)
+	err8 := s.ExcelFile.SetCellValue(sheet, "H"+idStr, userRegisterC.Etnia)
+	if err8 != nil {
+		return err8
+	}
+
+	if err := s.ExcelFile.Save(); err != nil {
+		return err
+	}
+	defer s.ExcelFile.Close()
+	return nil
+}
+
+func (s *APIServer) WriteExcelIPAQ(sheet string, idStr string, userResponse *UserResponse) error {
+	err1 := s.ExcelFile.SetCellValue(sheet, "A"+idStr, idStr)
+	if err1 != nil {
+		return err1
+	}
+	err2 := s.ExcelFile.SetCellValue(sheet, "B"+idStr, userResponse.Q1)
+	if err2 != nil {
+		return err2
+	}
+	err3 := s.ExcelFile.SetCellValue(sheet, "C"+idStr, userResponse.Q2)
+	if err3 != nil {
+		return err3
+	}
+	err4 := s.ExcelFile.SetCellValue(sheet, "D"+idStr, userResponse.Q3)
+	if err4 != nil {
+		return err4
+	}
+	err5 := s.ExcelFile.SetCellValue(sheet, "E"+idStr, userResponse.Q4)
+	if err5 != nil {
+		return err5
+	}
+	err6 := s.ExcelFile.SetCellValue(sheet, "F"+idStr, userResponse.Q5)
+	if err6 != nil {
+		return err6
+	}
+	err7 := s.ExcelFile.SetCellValue(sheet, "G"+idStr, userResponse.Q6)
+	if err7 != nil {
+		return err7
+	}
+	err8 := s.ExcelFile.SetCellValue(sheet, "H"+idStr, userResponse.Q7)
 	if err8 != nil {
 		return err8
 	}
@@ -154,6 +233,58 @@ func (s *APIServer) handleDownloadFile(w http.ResponseWriter, r *http.Request) e
 	http.ServeContent(w, r, filepath, fileInfo.ModTime(), file)
 
 	return nil
+}
+
+func makeUserRegister(user UserRegister, id int) (*UserRegisterC, error) {
+	var sem, age int64
+	var w, e bool
+
+	switch user.Semestre {
+	case "Primero":
+		sem = 1
+	case "Segundo":
+		sem = 2
+	case "Tercero":
+		sem = 3
+	case "Cuarto":
+		sem = 4
+	case "Quinto":
+		sem = 5
+
+	case "Sexto":
+		sem = 6
+	}
+
+	age, err := strconv.ParseInt(user.Edad, 10, 32)
+
+	if err != nil {
+		return &UserRegisterC{}, err
+	}
+
+	switch user.Trabajo {
+	case "Si":
+		w = true
+	case "No":
+		w = false
+	}
+
+	switch user.Etnia {
+	case "Si":
+		e = true
+	case "No":
+		e = false
+	}
+
+	return &UserRegisterC{
+		ID:           id,
+		Bachillerato: user.Bachillerato,
+		Semestre:     int(sem),
+		Sexo:         user.Sexo,
+		Trabajo:      w,
+		Etnia:        e,
+		Edad:         int(age),
+		EstadoCivil:  user.EstadoCivil,
+	}, nil
 }
 
 func makeUserResponse(data FormType) (*UserResponse, error) {

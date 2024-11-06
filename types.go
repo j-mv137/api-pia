@@ -33,6 +33,27 @@ type FormType struct {
 	Q7R  bool   `json:"q7R"`
 }
 
+type UserRegister struct {
+	Bachillerato string `json:"bachillerato"`
+	Semestre     string `json:"semestre"`
+	Sexo         string `json:"sexo"`
+	Edad         string `json:"edad"`
+	EstadoCivil  string `json:"estadoCivil"`
+	Trabajo      string `json:"trabajo"`
+	Etnia        string `json:"etnia"`
+}
+
+type UserRegisterC struct {
+	ID           int
+	Bachillerato string
+	Semestre     int
+	Sexo         string
+	Edad         int
+	EstadoCivil  string
+	Trabajo      bool
+	Etnia        bool
+}
+
 type UserResponse struct {
 	id int
 	Q1 float64
