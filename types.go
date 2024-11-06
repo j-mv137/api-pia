@@ -42,7 +42,9 @@ type UserRegister struct {
 	Trabajo      string `json:"trabajo"`
 	Etnia        string `json:"etnia"`
 }
-
+type GradeForm struct {
+	Calif string `json:"calif"`
+}
 type UserRegisterC struct {
 	ID           int
 	Bachillerato string

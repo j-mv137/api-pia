@@ -15,6 +15,7 @@ func (s *APIServer) Run() {
 	router := mux.NewRouter()
 	router.HandleFunc("/api/new-survey", makeHTTPHandlerFunc(s.handleNewSurvey))
 	router.HandleFunc("/api/register", makeHTTPHandlerFunc(s.handleRegister))
+	router.HandleFunc("/api/calif", makeHTTPHandlerFunc(s.handleNewGrade))
 	router.HandleFunc("/api/download-xlsx", makeHTTPHandlerFunc(s.handleDownloadFile))
 
 	fmt.Printf("Server running on port http://localhost%s", s.ListenAddr)
@@ -36,6 +37,59 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+func (s *APIServer) handleNewGrade(w http.ResponseWriter, r *http.Request) error {
+	var id int
+	sheet := "Registro de calificaciones"
+
+	grade := &GradeForm{}
+	err := json.NewDecoder(r.Body).Decode(grade)
+
+	if err != nil {
+		return err
+	}
+
+	gradeInt, err := strconv.ParseInt(grade.Calif, 10, 32)
+
+	if err != nil {
+		return err
+	}
+
+	rows, err := s.ExcelFile.GetRows("Registro de calificaciones")
+	fmt.Println(len(rows))
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i < len(rows); i++ {
+		if i < 2 {
+			continue
+		}
+		cellVal, err := s.ExcelFile.GetCellValue(sheet, "A"+strconv.FormatInt(int64(i), 10))
+		if err != nil {
+			break
+		}
+		if len(cellVal) == 0 {
+			id = i
+			break
+		}
+	}
+
+	idStr := strconv.FormatInt(int64(id), 10)
+	err1 := s.ExcelFile.SetCellValue(sheet, "A"+idStr, id-2)
+	if err1 != nil {
+		return err1
+	}
+	err2 := s.ExcelFile.SetCellValue(sheet, "B"+idStr, gradeInt)
+	if err2 != nil {
+		return err2
+	}
+
+	if err := s.ExcelFile.Save(); err != nil {
+		return err
+	}
+	defer s.ExcelFile.Close()
+	return nil
 }
 
 func (s *APIServer) handleNewSurvey(w http.ResponseWriter, r *http.Request) error {
